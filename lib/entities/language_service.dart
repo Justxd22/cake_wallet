@@ -40,7 +40,7 @@ class LanguageService {
     'hr': 'hrv',
     'it': 'ita',
     'th': 'tha',
-    'ar': 'sau'
+    'ar': 'egy'
   };
 
   static final list = <String, String> {};
