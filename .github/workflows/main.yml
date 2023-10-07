@@ -1,0 +1,138 @@
+name: TESTB
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  TESTB:
+
+    runs-on: ubuntu-20.04
+    env:
+      STORE_PASS: c76d76baaa527a1234827bca
+      KEY_PASS: cr76d76baa527a1234827cba
+      
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-java@v1
+        with:
+          java-version: '8.x'
+
+      - name: Flutter action
+        uses: subosito/flutter-action@v1
+        with:
+          flutter-version: '3.10.x'
+          channel: stable
+
+      - name: Install package dependencies
+        run: sudo apt-get install -y curl unzip automake build-essential file pkg-config git python libtool libtinfo5 cmake clang
+
+      - name: Execute Build and Setup Commands
+        run: |
+          sudo mkdir -p /opt/android
+          sudo chown $USER /opt/android
+          cd /opt/android
+          git clone https://github.com/justxd22/cake_wallet.git --branch main
+          cd cake_wallet/scripts/android/
+          ./install_ndk.sh
+          source ./app_env.sh cakewallet
+          ./app_config.sh
+
+      - name: Cache Externals
+        id: cache-externals
+        uses: actions/cache@v3
+        with:
+          path: |
+            /opt/android/cake_wallet/cw_haven/android/.cxx
+            /opt/android/cake_wallet/cw_haven/ios/External
+            /opt/android/cake_wallet/cw_monero/android/.cxx
+            /opt/android/cake_wallet/cw_monero/ios/External
+            /opt/android/cake_wallet/cw_shared_external/ios/External
+          key: ${{ hashFiles('**/build_monero.sh', '**/build_haven.sh', '**/monero_api.cpp') }}
+
+      - if: ${{ steps.cache-externals.outputs.cache-hit != 'true' }}
+        name: Generate Externals
+        run: |
+          cd /opt/android/cake_wallet/scripts/android/
+          source ./app_env.sh cakewallet
+          ./build_all.sh
+          ./copy_monero_deps.sh
+
+      - name: ContinueBuild_script
+        run: |
+          cd /opt/android/cake_wallet
+          flutter pub get
+          cd /opt/android/cake_wallet/android/app
+          keytool -genkey -v -keystore key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias miKey -noprompt -dname "CN=CakeWallet, OU=CakeWallet, O=CakeWallet, L=Florida, S=America, C=USA" -storepass $STORE_PASS -keypass $KEY_PASS
+          cd /opt/android/cake_wallet
+          flutter packages pub run tool/generate_android_key_properties.dart keyAlias=miKey storeFile=key.jks storePassword=$STORE_PASS keyPassword=$KEY_PASS
+          cd /opt/android/cake_wallet
+          ls -lah lib/
+          echo "#LOCALIZATIONTTTEEESSSTTT#"
+          flutter packages pub run tool/generate_localization.dart
+          ls -lah lib/generated/*
+          cd /opt/android/cake_wallet
+          cd cw_core && flutter pub get && flutter packages pub run build_runner build --delete-conflicting-outputs && cd ..
+          cd cw_monero && flutter pub get && flutter packages pub run build_runner build --delete-conflicting-outputs && cd ..
+          cd cw_bitcoin && flutter pub get && flutter packages pub run build_runner build --delete-conflicting-outputs && cd ..
+          cd cw_haven && flutter pub get && flutter packages pub run build_runner build --delete-conflicting-outputs && cd ..
+          cd cw_ethereum && flutter pub get && flutter packages pub run build_runner build --delete-conflicting-outputs && cd ..
+          cd cw_nano && flutter pub get && flutter packages pub run build_runner build --delete-conflicting-outputs && cd ..
+          flutter packages pub run build_runner build --delete-conflicting-outputs
+          cd /opt/android/cake_wallet
+          touch lib/.secrets.g.dart
+          touch cw_ethereum/lib/.secrets.g.dart
+          
+          echo "const salt = '8d1a257fa582f952fe4d69dfbf6528b9';" > lib/.secrets.g.dart
+          echo "const keychainSalt = 'c76d76baaa527a1234827bca';" >> lib/.secrets.g.dart
+          echo "const key = '48db8efef2d83fc2864ecd38cb42707c';" >> lib/.secrets.g.dart
+          echo "const walletSalt = '70082dab';" >> lib/.secrets.g.dart
+          echo "const shortKey = 'fe396388097c5a7cc05edc47';" >> lib/.secrets.g.dart
+          echo "const backupSalt = 'ba6a484b8d0472a7';" >> lib/.secrets.g.dart
+          echo "const backupKeychainSalt = 'beb2f5c8045bc9ffd2fe9fff';" >> lib/.secrets.g.dart
+          echo "const changeNowApiKey = '0000000000000000000000000000';" >> lib/.secrets.g.dart
+          echo "const changeNowApiKeyDesktop = '0000000000000000000000000000';" >> lib/.secrets.g.dart
+          echo "const wyreSecretKey = '0000000000000000000000000000';" >> lib/.secrets.g.dart
+          echo "const wyreApiKey = '0000000000000000000000000000';" >> lib/.secrets.g.dart
+          echo "const wyreAccountId = '0000000000000000000000000000';" >> lib/.secrets.g.dart
+          echo "const moonPayApiKey = '0000000000000000000000000000';" >> lib/.secrets.g.dart
+          echo "const moonPaySecretKey = '0000000000000000000000000000';" >> lib/.secrets.g.dart
+          echo "const sideShiftAffiliateId = '0000000000000000000000000000';" >> lib/.secrets.g.dart
+          echo "const sideShiftApiKey = '0000000000000000000000000000';" >> lib/.secrets.g.dart
+          echo "const simpleSwapApiKey = '0000000000000000000000000000';" >> lib/.secrets.g.dart
+          echo "const simpleSwapApiKeyDesktop = '0000000000000000000000000000';" >> lib/.secrets.g.dart
+          echo "const onramperApiKey = '0000000000000000000000000000';" >> lib/.secrets.g.dart
+          echo "const anypayToken = '0000000000000000000000000000';" >> lib/.secrets.g.dart
+          echo "const ioniaClientId = '0000000000000000000000000000';" >> lib/.secrets.g.dart
+          echo "const twitterBearerToken = '0000000000000000000000000000';" >> lib/.secrets.g.dart
+          echo "const trocadorApiKey = '0000000000000000000000000000';" >> lib/.secrets.g.dart
+          echo "const trocadorExchangeMarkup = '0000000000000000000000000000';" >> lib/.secrets.g.dart
+          echo "const anonPayReferralCode = '0000000000000000000000000000';" >> lib/.secrets.g.dart
+          echo "const fiatApiKey = '0000000000000000000000000000';" >> lib/.secrets.g.dart
+          echo "const payfuraApiKey = '0000000000000000000000000000';" >> lib/.secrets.g.dart
+          echo "const etherScanApiKey = '0000000000000000000000000000';" >> cw_ethereum/lib/.secrets.g.dart
+          echo "const chatwootWebsiteToken = '0000000000000000000000000000';" >> lib/.secrets.g.dart
+          echo "const exolixApiKey = '0000000000000000000000000000';" >> lib/.secrets.g.dart
+          echo "const robinhoodApplicationId = '0000000000000000000000000000';" >> lib/.secrets.g.dart
+          echo "const robinhoodCIdApiSecret = '0000000000000000000000000000';" >> lib/.secrets.g.dart
+          echo "const walletConnectProjectId = '0000000000000000000000000000';" >> lib/.secrets.g.dart
+
+      - name: Rename-script
+        run: echo -e "id=com.miee.wal\nname=$GITHUB_HEAD_REF" > /opt/android/cake_wallet/android/app.properties
+        
+      - name: Build_script
+        run: |
+          cd /opt/android/cake_wallet
+          flutter build apk --release
+          
+      - name: final
+        run: |
+          cd /opt/android/cake_wallet/build/app/outputs/apk/release
+          mkdir test-apk
+          cp app-release.apk test-apk/$GITHUB_HEAD_REF.apk
+
+      - name: Upload Artifact
+        uses: kittaakos/upload-artifact-as-is@v0
+        with:
+          path: /opt/android/cake_wallet/build/app/outputs/apk/release/test-apk/
