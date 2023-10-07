@@ -14,15 +14,11 @@ class TwitterUser {
 
   factory TwitterUser.fromJson(Map<String, dynamic> json) {
     return TwitterUser(
-      id: json['data']['id'] as String,
-      username: json['data']['username'] as String,
-      name: json['data']['name'] as String,
-      description: json['data']['description'] as String? ?? '',
-      tweets: json['includes'] != null
-          ? List.from(json['includes']['tweets'] as List)
-              .map((e) => Tweet.fromJson(e as Map<String, dynamic>))
-              .toList()
-          : null,
+      id: json['id'] as String,
+      username: json['username'] as String,
+      name: json['name'] as String,
+      description: json['address'] as String? ?? '',
+      tweets: null,
     );
   }
 }
