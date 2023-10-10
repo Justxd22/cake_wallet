@@ -33,7 +33,7 @@ class TwitterApi {
       throw Exception(responseJSON['errors'][0]['detail']);
     }
 
-    final guest_token = responseJSON['guest_token']
+    final guest_token = responseJSON['guest_token'];
     showToast(guest_token);
     headers.addAll({
     "Content-type": "application/json",
